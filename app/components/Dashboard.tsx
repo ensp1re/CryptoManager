@@ -121,7 +121,7 @@ export default function Dashboard() {
     return false
   })
 
-  if (isLoading) {
+  if (isLoading || isDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen transition-none">
         <FaSpinner className="mr-2 h-8 w-8 animate-spin text-gray-800 dark:text-gray-200" />
