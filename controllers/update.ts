@@ -10,7 +10,7 @@ export default async function updateActivity(req: NextApiRequest, res: NextApiRe
     try {
         const activity = await prisma.activity.update({
             where: { id: id as string },
-            data: updateData
+            data: updateData,
         });
 
         res.status(200).json(activity);

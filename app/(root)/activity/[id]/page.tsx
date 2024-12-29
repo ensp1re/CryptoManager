@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { format } from 'date-fns'
 import { Activity, Comment } from '@/interfaces/main.interface'
 import axios from 'axios'
+import toast from 'react-hot-toast'
+import { useCreateCommentMutation, useUpdateActivityMutation } from '@/app/store/api'
 
 export default function ActivityPreview() {
     const params = useParams();
@@ -15,6 +17,10 @@ export default function ActivityPreview() {
     const [isEditing, setIsEditing] = useState(false)
     const [editedActivity, setEditedActivity] = useState<Activity | null>(null)
     const [newComment, setNewComment] = useState('')
+
+    const [postComment, { isLoading: isPostingComment }] = useCreateCommentMutation()
+    const [updatePost, { isLoading: isUpdating }] = useUpdateActivityMutation();
+
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -42,8 +48,28 @@ export default function ActivityPreview() {
     const handleSave = async () => {
         if (editedActivity) {
             try {
-                setActivity(editedActivity)
-                setIsEditing(false)
+
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { updatedAt, createdAt, comments, ...newEditedActivity } = {
+                    ...activity,
+                    ...editedActivity,
+                    profit: parseInt(editedActivity.profit as unknown as string, 10),
+                    cost: parseInt(editedActivity.cost as unknown as string, 10),
+                    deadline: new Date(editedActivity.deadline).toISOString()
+                }
+
+                console.log("1314dsa", newEditedActivity)
+                await updatePost(newEditedActivity).unwrap().then((res) => {
+                    toast.success('Activity updated successfully')
+                    console.log(res)
+                    setActivity(res)
+                }).catch((error) => {
+                    console.error('Failed to update activity:', error)
+                    toast.error('Error updating activity')
+                }).finally(() => {
+                    setIsEditing(false)
+                    setEditedActivity(activity)
+                });
             } catch {
                 setError('Error updating activity')
             }
@@ -56,7 +82,8 @@ export default function ActivityPreview() {
     }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target
+        const { name, value } = (e.target as HTMLInputElement)
+        console.log(name, value)
         setEditedActivity(prev => prev ? { ...prev, [name]: value } : null)
     }
 
@@ -64,14 +91,21 @@ export default function ActivityPreview() {
         e.preventDefault()
         if (newComment.trim() && activity) {
             const comment: Comment = {
-                id: Date.now().toString(),
-                userId: 'currentUser', // Replace with actual user ID
-                content: newComment.trim(),
-                createdAt: new Date().toISOString(),
+                activityId: activity.id as string,
+                userId: activity.userId as string,
+                comment: newComment.trim(),
             }
             try {
-                setActivity(prev => prev ? { ...prev, comments: [...(prev.comments || []), comment] } : null)
-                setNewComment('')
+                await postComment(comment).unwrap().then((res) => {
+                    toast.success('Comment added successfully')
+                    console.log(res)
+                    setActivity(prev => prev ? { ...prev, comments: [...(prev.comments || []), comment] } : null)
+                    setNewComment('')
+                }).catch((error) => {
+                    console.error('Failed to create comment:', error)
+                    toast.error('Error adding comment')
+                })
+
             } catch {
                 setError('Error adding comment')
             }
@@ -81,7 +115,7 @@ export default function ActivityPreview() {
     if (loading) return (
         <div className="flex items-center justify-center min-h-screen">
             <div className="flex items-center space-x-2">
-                <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-blue-500 hover:bg-blue-600 transition duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -187,9 +221,18 @@ export default function ActivityPreview() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                                    className={
+                                        `px-4 py-2 bg-blue-500 hover:bg-blue-600 transition duration-300 text-white rounded-md ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'shadow-md'}`
+                                    }
                                 >
-                                    Save
+                                    {
+                                        isUpdating ? (
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        ) : 'Save'
+                                    }
                                 </button>
                             </div>
                         </form>
@@ -199,7 +242,7 @@ export default function ActivityPreview() {
                                 <h1 className="text-3xl font-bold">{activity.project}</h1>
                                 <button
                                     onClick={handleEdit}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition duration-300 text-white rounded-md"
                                 >
                                     Edit
                                 </button>
@@ -226,7 +269,7 @@ export default function ActivityPreview() {
                             {activity.link && (
                                 <div className="mb-4">
                                     <span className="font-medium">Link:</span>
-                                    <a href={activity.link} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:underline">
+                                    <a href={activity.link} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-500 hover:bg-blue-600 transition duration-300 hover:underline">
                                         {activity.link}
                                     </a>
                                 </div>
@@ -248,7 +291,7 @@ export default function ActivityPreview() {
                                     <span className="font-medium">Progress:</span>
                                     <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                                         <div
-                                            className="bg-blue-600 h-2.5 rounded-full"
+                                            className="bg-blue-600  h-2.5 rounded-full"
                                             style={{ width: `${activity.progress}%` }}
                                         ></div>
                                     </div>
@@ -263,11 +306,11 @@ export default function ActivityPreview() {
                     <h2 className="text-2xl font-bold mb-4">Comments</h2>
                     {activity.comments && activity.comments.length > 0 ? (
                         <ul className="space-y-4 mb-4">
-                            {activity.comments.map((comment) => (
-                                <li key={comment.id} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                                    <p className="mb-2">{comment.content}</p>
+                            {activity.comments.map((comment, index) => (
+                                <li key={comment.id || index} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                                    <p className="mb-2">{comment.comment}</p>
                                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                                        {format(new Date(comment.createdAt), 'PPP')}
+                                        {format(new Date(comment.createdAt || Date.now()), 'PPP')}
                                     </span>
                                 </li>
                             ))}
@@ -284,10 +327,19 @@ export default function ActivityPreview() {
                             rows={3}
                         ></textarea>
                         <button
+                            disabled={isPostingComment || !newComment.trim()}
                             type="submit"
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                            className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 transition duration-300 text-white rounded-md ${isPostingComment || !newComment.trim() ? 'opacity-50 cursor-not-allowed' : 'shadow-md'}`}
                         >
-                            Add Comment
+                            {
+                                isPostingComment ? (
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : 'Add Comment'
+
+                            }
                         </button>
                     </form>
                 </div>

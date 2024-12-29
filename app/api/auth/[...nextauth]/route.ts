@@ -50,9 +50,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt'
   },
-  debug: true, // Set to true to display debug messages
   secret: process.env.NEXTAUTH_SECRET,
-
   pages: {
     signIn: '/login',
   },

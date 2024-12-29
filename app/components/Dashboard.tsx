@@ -108,6 +108,11 @@ export default function Dashboard() {
       return !isNaN(deadlineDate.getTime()) && deadlineDate > new Date()
     }
     if (filter === 'completed') return activity.completed
+    if (filter === 'notCompleted') return !activity.completed
+    if (filter === 'highCost') return activity.cost! >= 1000
+    if (filter === 'lowCost') return activity.cost! < 1000
+    if (filter === 'highProfit') return activity.profit! >= 500
+    if (filter === 'lowProfit') return activity.profit! < 500
     return false
   })
 
@@ -144,6 +149,11 @@ export default function Dashboard() {
             <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="all">All Activities</SelectItem>
             <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="upcoming">Upcoming</SelectItem>
             <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="completed">Completed</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="notCompleted">Not Completed</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="highCost">High Cost</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="lowCost">Low Cost</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="highProfit">High Profit</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="lowProfit">Low Profit</SelectItem>
           </SelectContent>
         </Select>
         <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
@@ -155,7 +165,7 @@ export default function Dashboard() {
         <TabsTrigger value="analytics">Analytics</TabsTrigger>
       </TabsList>
       <TabsContent value="activities">
-        {filteredActivities.length === 0 && !isLoading ? (
+        {filteredActivities.length === 0 && !isDataLoading ? (
           <div className="flex justify-center items-center min-h-[500px]">
 
             <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">

@@ -53,7 +53,10 @@ export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
             where,
             orderBy: orderByParsed,
             skip,
-            take
+            take,
+            include: {
+                comments: true
+            }
         });
 
         const total = await prisma.activity.count({ where });
@@ -72,7 +75,10 @@ export async function getActivityById(req: NextApiRequest, res: NextApiResponse)
 
     try {
         const activity = await prisma.activity.findUnique({
-            where: { id: id as string }
+            where: { id: id as string },
+            include: {
+                comments: true
+            }
         });
 
         if (!activity) {
@@ -97,7 +103,10 @@ export async function getActivitiesByUser(req: NextApiRequest, res: NextApiRespo
 
     try {
         const activities = await prisma.activity.findMany({
-            where: { userId: userId as string }
+            where: { userId: userId as string },
+            include: {
+                comments: true
+            }
         });
 
         res.status(200).json({
@@ -123,12 +132,87 @@ export async function getAllActivities(req: NextApiRequest, res: NextApiResponse
             return res.status(401).json({ message: "Unauthorized" });
         }
 
-        const activities = await prisma.activity.findMany();
+        const activities = await prisma.activity.findMany({
+            include: {
+                comments: true
+            }
+        });
 
         res.status(200).json({
             data: activities,
             total: activities.length,
             type: "All Activities"
+        });
+    } catch (error: unknown) {
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: (error as Error).message,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+
+export async function getCommentById(req: NextApiRequest, res: NextApiResponse) {
+    const { id } = req.query;
+
+    try {
+        const comment = await prisma.comment.findUnique({
+            where: { id: id as string }
+        });
+
+        if (!comment) {
+            return res.status(404).json({ message: "Comment not found" });
+        }
+
+        res.status(200).json({
+            data: comment,
+            type: "Comment"
+        });
+    } catch (error: unknown) {
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: (error as Error).message,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+
+export async function getCommentsByActivity(req: NextApiRequest, res: NextApiResponse) {
+    const { activityId } = req.query;
+
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { activityId: activityId as string }
+        });
+
+        res.status(200).json({
+            data: comments,
+            total: comments.length,
+            type: "Comments"
+        });
+    } catch (error: unknown) {
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: (error as Error).message,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+export async function getCommentsByUser(req: NextApiRequest, res: NextApiResponse) {
+    const { userId } = req.query;
+
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { userId: userId as string }
+        });
+
+        res.status(200).json({
+            data: comments,
+            total: comments.length,
+            type: "User Comments"
         });
     } catch (error: unknown) {
         res.status(500).json({

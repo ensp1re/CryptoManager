@@ -1,4 +1,4 @@
-import { ICalendarDate, IPagination } from '@/interfaces/main.interface'
+import { Comment, ICalendarDate, IPagination } from '@/interfaces/main.interface'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
 
@@ -51,8 +51,27 @@ export const apiSlice = createApi({
         getAllActivities: builder.query({
             query: () => 'activities/all',
         }),
+        createComment: builder.mutation({
+            query: (body: Comment) => ({
+                url: `comments`,
+                method: 'POST',
+                body,
+            }),
+        }),
+        deleteComment: builder.mutation({
+            query: (id: string) => ({
+                url: `comments`,
+                method: 'DELETE',
+                body: { id },
+            }),
+        }),
 
     }),
 })
 
-export const { useGetActivitiesQuery, useGetActivityByIdQuery, useCreateActivityMutation, useUpdateActivityMutation, useDeleteActivityMutation, useSeedDataMutation, useGetActivityByDateQuery, useGetAllActivitiesQuery } = apiSlice
+export const {
+    useGetActivitiesQuery, useGetActivityByIdQuery, useCreateActivityMutation,
+    useUpdateActivityMutation, useDeleteActivityMutation, useSeedDataMutation,
+    useGetActivityByDateQuery, useGetAllActivitiesQuery, useCreateCommentMutation,
+    useDeleteCommentMutation
+} = apiSlice

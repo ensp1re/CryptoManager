@@ -11,6 +11,7 @@ import { useCreateActivityMutation } from '../store/api'
 import { FaSpinner } from 'react-icons/fa'
 import { useAppSelector } from '../store/hooks'
 import { RootState } from '../store/store'
+import toast from 'react-hot-toast'
 
 interface AddActivityModalProps {
   onClose: () => void
@@ -62,16 +63,18 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
     console.log(dataWithUserId);
     await postActivity(dataWithUserId).unwrap()
       .then((res) => {
-        console.log('Activity created successfully');
+        toast.success('Activity created successfully')
         console.log(res);
       })
       .catch((error) => {
         console.error('Failed to create activity:', error);
+        toast.error('Failed to create activity')
+      }).finally(() => {
+        onClose()
       });
 
 
 
-    onClose()
   }
 
   const handleCheckboxChange = (field: 'dependencies' | 'tags' | 'assignedTo', value: string) => {

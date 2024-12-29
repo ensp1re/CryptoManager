@@ -89,3 +89,47 @@ export const seedData = async (_req: NextApiRequest, res: NextApiResponse) => {
         });
     }
 };
+
+
+export const createComment = async (req: NextApiRequest, res: NextApiResponse) => {
+    const { activityId, comment, userId } = req.body;
+
+    if (!activityId || !comment) {
+        return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    try {
+        const activity = await prisma.activity.findUnique({ where: { id: activityId } });
+
+        if (!activity) {
+            return res.status(404).json({ message: "Activity not found" });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const newComment = await prisma.comment.create({
+            data: {
+                comment,
+                user: { connect: { id: userId } },
+                activity: { connect: { id: activityId } }
+            }
+        });
+
+        res.status(201).json({
+            message: "Comment created",
+            data: newComment
+        });
+    } catch (error: unknown) {
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: (error as Error).message,
+            timestamp: new Date().toISOString()
+        });
+    } finally {
+        await prisma.$disconnect();
+    }
+};

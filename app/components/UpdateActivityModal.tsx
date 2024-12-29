@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Activity, User } from '@/interfaces/main.interface'
 import { useDeleteActivityMutation, useUpdateActivityMutation } from '../store/api'
+import { FaSpinner } from 'react-icons/fa'
+import toast from 'react-hot-toast'
 
 interface UpdateActivityModalProps {
   activity: Activity | null
@@ -38,12 +40,20 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
 
 
 
-      await updatePost(updatedActivity).then((res) => {
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { comments, createdAt, updatedAt, ...newData } = updatedActivity;
+
+
+      await updatePost(newData).then((res) => {
         console.log(res);
-        updateActivity(updatedActivity)
-        onClose()
+        updateActivity(res.data)
+        toast.success('Activity updated successfully')
       }).catch((err) => {
         console.log(err);
+        toast.error('Failed to update activity')
+      }).finally(() => {
+        onClose()
       })
     }
   }
@@ -52,11 +62,14 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
     if (updatedActivity && confirm('Are you sure you want to delete this activity?')) {
       await deletePost(updatedActivity.id!).then((res) => {
         console.log(res);
+        toast.success('Activity deleted successfully')
         deleteActivity(updatedActivity.id!)
-        onClose()
-        console.log(res);
+
       }).catch((err) => {
         console.log(err);
+        toast.error('Failed to delete activity')
+      }).finally(() => {
+        onClose()
       })
     }
   }
@@ -143,7 +156,7 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Tags</Label>
             <div className="col-span-3 space-y-2">
-              {availableTags.map(tag => (
+              {availableTags && availableTags.map(tag => (
                 <div key={tag} className="flex items-center space-x-2">
                   <Checkbox
                     id={`tag-${tag}`}
@@ -167,14 +180,22 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
           <Button type="submit">
             {
               isUpdating
-                ? 'Updating...'
+                ? (
+                  <div className="flex items-center space-x-2">
+                    <FaSpinner className="h-4 w-4 animate-spin" />
+                  </div>
+                )
                 : 'Update Activity'
             }
           </Button>
           <Button type="button" variant="destructive" onClick={handleDelete}>
             {
               isDeleting
-                ? 'Deleting...'
+                ? (
+                  <div className="flex items-center space-x-2">
+                    <FaSpinner className="h-4 w-4 animate-spin" />
+                  </div>
+                )
                 : 'Delete Activity'
             }
           </Button>

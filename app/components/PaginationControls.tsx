@@ -17,7 +17,7 @@ const PaginationControls: FC<PaginationControlsProps> = ({ page, setPage }): Rea
 
     const activities = useAppSelector((state) => state.activities);
     const itemsPerPage = 10;
-    const totalItems = (activities.activities[0].activities as unknown[]).length;
+    const totalItems = (activities?.activities[0]?.activities as unknown[])?.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const isNextDisabled = page > totalPages;
 

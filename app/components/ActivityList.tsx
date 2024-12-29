@@ -13,6 +13,8 @@ import CommentModal from './CommentModal'
 import { Activity, User } from '@/interfaces/main.interface'
 import { useUpdateActivityMutation } from '../store/api'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { FaSpinner } from 'react-icons/fa'
 
 interface ActivityListProps {
   activities: Activity[]
@@ -28,7 +30,7 @@ export default function ActivityList({ activities, users, updateActivity, delete
   const [isUpdateOpen, setIsUpdateOpen] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [id, setId] = useState('')
-  const [updatePost, { isLoading: isUpdating }] = useUpdateActivityMutation();
+  const [updatePost, { isLoading: isUpdating, isSuccess }] = useUpdateActivityMutation();
   const router = useRouter()
 
   const getTagColor = (tag: string) => {
@@ -47,12 +49,17 @@ export default function ActivityList({ activities, users, updateActivity, delete
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const updatedActivity = activities.find(activity => activity.id === id)
-    const newData = { ...updatedActivity, completed: completed }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { comments, createdAt, updatedAt, ...newData } = { ...updatedActivity, completed: completed }
     if (!updatedActivity) return
     await updatePost(newData).then((res) => {
       console.log(res);
-      updateActivity({ ...updatedActivity, completed: completed })
+      toast.success('Activity updated successfully')
+      if (isSuccess) {
+        updateActivity({ ...updatedActivity, completed: completed })
+      }
     }).catch((err) => {
+      toast.error('Failed to update activity')
       console.log(err);
     })
   }
@@ -163,7 +170,9 @@ export default function ActivityList({ activities, users, updateActivity, delete
                   }}
                 >
                   {
-                    isUpdating && activity.id === id ? 'Updating...' :
+                    isUpdating && activity.id === id ? (
+                      <FaSpinner className="h-4 w-4 animate-spin" />
+                    ) :
                       activity.completed ? (
                         <>
                           <XCircle className="w-4 h-4 mr-1" />

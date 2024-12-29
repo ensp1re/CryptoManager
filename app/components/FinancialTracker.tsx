@@ -2,10 +2,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { Activity } from "@/interfaces/main.interface"
 
 interface FinancialTrackerProps {
-  activities: Activity[]
+  activities: {
+    id: string;
+    userId: string;
+    project: string;
+    cost: number | null;
+    deadline: Date | null;
+    completed: boolean | null;
+    link: string | null;
+    profit: number | null;
+    dependencies: string[];
+    timeSpent: number | null;
+    acitivityDescription: string;
+  }[];
 }
 
 export default function FinancialTracker({ activities }: FinancialTrackerProps) {

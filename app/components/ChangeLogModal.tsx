@@ -26,8 +26,10 @@ export default function ChangeLogModal({ activity, updateActivity, onClose }: Ch
     const parsedTimeSpent = parseFloat(timeSpent)
     if (isNaN(parsedTimeSpent)) return // Don't update if the input is not a valid number
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { comments, createdAt, updatedAt, ...rest } = activity;
     const updatedActivity = {
-      ...activity,
+      ...rest,
       timeSpent: (activity.timeSpent || 0) + parsedTimeSpent
     }
     await updatePost(updatedActivity).then((res) => {

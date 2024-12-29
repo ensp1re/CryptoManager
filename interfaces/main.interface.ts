@@ -25,9 +25,10 @@ export interface Activity {
 
 export interface Comment {
   id?: string
+  activityId: string
   userId: string
-  content: string
-  createdAt: string
+  comment: string
+  createdAt?: string
 }
 
 // change when login page is ready
