@@ -42,11 +42,7 @@ export default function Dashboard() {
     page: page,
     search: search
   }
-
   const { data: activitiesData, isLoading: isDataLoading, isError } = useGetActivitiesQuery(data)
-
-
-
 
   useEffect(() => {
     if (searchParams?.get('search')) {
@@ -54,18 +50,12 @@ export default function Dashboard() {
     }
   }, [searchParams])
 
-
-
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
       if (activitiesData && !isDataLoading && !isError) {
-
-
-
         dispatch(setPageName('Dashboard'))
-
         setActivities(activitiesData.activities)
         dispatch(addActivity(activitiesData))
 
@@ -86,7 +76,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+  }, [fetchData, page, search])
 
   const handleAddActivity = (activity: Activity) => {
     dispatch(addActivity(activity))

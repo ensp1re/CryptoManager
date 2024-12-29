@@ -20,7 +20,7 @@ interface AddActivityModalProps {
   users: User[]
 }
 
-export default function AddActivityModal({ onClose, onAdd, users }: AddActivityModalProps) {
+export default function AddActivityModal({ onClose, onAdd }: AddActivityModalProps) {
   const [activity, setActivity] = useState<Omit<Activity, 'id' | 'completed' | 'timeSpent' | 'progress' | 'comments'>>({
     project: '',
     acitivityDescription: '',
@@ -35,6 +35,22 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
     activities: []
   })
 
+  const clearForm = () => {
+    setActivity({
+      project: '',
+      acitivityDescription: '',
+      cost: 0,
+      profit: 0,
+      deadline: new Date().toISOString().split('T')[0],
+      link: '',
+      dependencies: [],
+      tags: [],
+      attachments: [],
+      assignedTo: [],
+      activities: []
+    })
+  }
+
 
   const user = useAppSelector((state: RootState) => state.auth.user)
 
@@ -43,15 +59,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const today = new Date().toISOString().split('T')[0]
-    onAdd({
-      ...activity,
-      id: Date.now().toString(),
-      completed: false,
-      timeSpent: 0,
-      progress: 0,
-      comments: [],
-      deadline: activity.deadline || today
-    })
+
 
 
     const dataWithUserId = {
@@ -65,12 +73,22 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
       .then((res) => {
         toast.success('Activity created successfully')
         console.log(res);
+        onAdd({
+          ...activity,
+          id: Date.now().toString(),
+          completed: false,
+          timeSpent: 0,
+          progress: 0,
+          comments: [],
+          deadline: activity.deadline || today
+        })
       })
       .catch((error) => {
         console.error('Failed to create activity:', error);
         toast.error('Failed to create activity')
       }).finally(() => {
         onClose()
+        clearForm()
       });
 
 
@@ -87,6 +105,8 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
         : [value]
     }))
   }
+
+
 
   return (
     <DialogContent className="sm:max-w-[425px]">
@@ -172,7 +192,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
+          {/* <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Assign To</Label>
             <div className="col-span-3 space-y-2">
               {users.map(user => (
@@ -186,7 +206,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
         <DialogFooter>
           <Button type="submit">

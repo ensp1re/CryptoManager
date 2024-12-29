@@ -17,7 +17,7 @@ export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
     if (search) {
         where.OR = [
             { project: { contains: search as string, mode: "insensitive" } },
-            { activityDescription: { contains: search as string, mode: "insensitive" } }
+            { acitivityDescription: { contains: search as string, mode: "insensitive" } }
         ];
     }
 
