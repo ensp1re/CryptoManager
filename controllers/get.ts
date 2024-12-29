@@ -5,7 +5,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 const prisma = new PrismaClient();
 
 export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
-    const { orderBy, filter, search, page = 1, pageSize = 10 } = req.query;
+    const { orderBy, filter, search, page = 1, pageSize = 10, userId } = req.query;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
@@ -14,7 +14,7 @@ export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
     if (search) {
         where.OR = [
             { project: { contains: search as string, mode: "insensitive" } },
-            { acitivityDescription: { contains: search as string, mode: "insensitive" } }
+            { activityDescription: { contains: search as string, mode: "insensitive" } }
         ];
     }
 
@@ -36,6 +36,23 @@ export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
             where.profit = { lt: 500 };
         }
     }
+
+    // Filter by userId if provided
+    if (userId) {
+
+        const isUser = await prisma.user.findUnique({
+            where: {
+                id: userId as string
+            }
+        });
+
+        if (!isUser) {
+            return res.status(404).json({ message: "Activities not found" });
+        }
+        where.userId = userId as string;
+    }
+
+
 
     const skip = (Number(page) - 1) * Number(pageSize);
     const take = Number(pageSize);

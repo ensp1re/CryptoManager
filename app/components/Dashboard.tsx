@@ -17,6 +17,8 @@ import { useGetActivitiesQuery } from '../store/api'
 import { setPage as setPageName } from '../store/slices/authSlice'
 import PaginationControls from './PaginationControls'
 import { useSearchParams } from 'next/navigation'
+import { useAppSelector } from '../store/hooks'
+import { RootState } from '../store/store'
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<Activity[]>([])
@@ -30,10 +32,13 @@ export default function Dashboard() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('')
 
+  const auth = useAppSelector((state: RootState) => state.auth)
+
 
 
 
   const data = {
+    userId: auth.user?.id ?? undefined,
     page: page,
     search: search
   }

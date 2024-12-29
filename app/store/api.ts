@@ -7,10 +7,16 @@ export const apiSlice = createApi({
     baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
     endpoints: (builder) => ({
         getActivities: builder.query({
-            query: (data: IPagination) => ({
-                url: `activities?page=${data.page || 1}&search=${data.search || ''}`,
-                method: 'GET',
-            }),
+            query: (data: IPagination) => {
+                let url = `activities?page=${data.page || 1}&search=${data.search || ''}`;
+                if (data.userId) {
+                    url += `&userId=${data.userId}`;
+                }
+                return {
+                    url,
+                    method: 'GET',
+                };
+            },
         }),
         getActivityById: builder.query({
             query: (id: string) => `activities/${id}`,

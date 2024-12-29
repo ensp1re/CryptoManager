@@ -86,6 +86,7 @@ export interface ICalendarDate {
 }
 
 export interface IPagination {
+  userId?: string
   page?: number
   pageSize?: number
   search?: string
