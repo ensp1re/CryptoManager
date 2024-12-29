@@ -5,7 +5,10 @@ import { NextApiRequest, NextApiResponse } from "next";
 const prisma = new PrismaClient();
 
 export async function getActivities(req: NextApiRequest, res: NextApiResponse) {
-    const { orderBy, filter, search, page = 1, pageSize = 10, userId } = req.query;
+    const { orderBy, filter, search, page = 1, pageSize = 10 } = req.query;
+
+    const auth = await authenticate(req, res);
+    const userId = auth?.id;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
