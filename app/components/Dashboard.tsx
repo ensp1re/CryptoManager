@@ -121,13 +121,7 @@ export default function Dashboard() {
     return false
   })
 
-  if (isLoading || isDataLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen transition-none">
-        <FaSpinner className="mr-2 h-8 w-8 animate-spin text-gray-800 dark:text-gray-200" />
-      </div>
-    )
-  }
+
 
   if (error) {
     return (
@@ -144,6 +138,54 @@ export default function Dashboard() {
   }
 
   return <div className="space-y-6 mb-12 lg:mb-2">
+    {
+      isLoading ? (
+        <div className="flex justify-center items-center h-screen transition-none">
+          <FaSpinner className="mr-2 h-8 w-8 animate-spin text-gray-800 dark:text-gray-200" />
+        </div>
+      ) : (
+        <>
+          <Tabs defaultValue="activities" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+            <TabsContent value="activities">
+              {filteredActivities.length === 0 && !isDataLoading && !isLoading ? (
+                <div className="flex justify-center items-center min-h-[500px]">
+
+                  <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">
+                    <AlertTitle className="text-xl font-semibold mb-2">No activities found</AlertTitle>
+                    <AlertDescription className="text-gray-600 dark:text-gray-400">
+                      You can add a new activity by clicking the button above.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : (
+
+                <Suspense>
+                  <ActivityList
+                    activities={filteredActivities}
+                    users={users}
+                    updateActivity={handleUpdateActivity}
+                    deleteActivity={handleDeleteActivity} />
+                  <PaginationControls page={data.page} setPage={setPage} />
+                </Suspense>
+              )}
+            </TabsContent>
+            <TabsContent value="analytics">
+              <AnalyticsDashboard activities={activities} />
+            </TabsContent>
+          </Tabs><Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <AddActivityModal
+              onClose={() => setIsAddModalOpen(false)}
+              onAdd={handleAddActivity}
+              activities={activities}
+              users={users} />
+          </Dialog>
+        </>
+      )
+    }
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <Select value={filter} onValueChange={(value) => setFilter(value)}>
@@ -164,44 +206,7 @@ export default function Dashboard() {
         <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
       </div>
     </div>
-    <Tabs defaultValue="activities" className="w-full">
-      <TabsList className="mb-4">
-        <TabsTrigger value="activities">Activities</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
-      </TabsList>
-      <TabsContent value="activities">
-        {filteredActivities.length === 0 && !isDataLoading ? (
-          <div className="flex justify-center items-center min-h-[500px]">
 
-            <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">
-              <AlertTitle className="text-xl font-semibold mb-2">No activities found</AlertTitle>
-              <AlertDescription className="text-gray-600 dark:text-gray-400">
-                You can add a new activity by clicking the button above.
-              </AlertDescription>
-            </Alert>
-          </div>
-        ) : (
-
-          <Suspense>
-            <ActivityList
-              activities={filteredActivities}
-              users={users}
-              updateActivity={handleUpdateActivity}
-              deleteActivity={handleDeleteActivity} />
-            <PaginationControls page={data.page} setPage={setPage} />
-          </Suspense>
-        )}
-      </TabsContent>
-      <TabsContent value="analytics">
-        <AnalyticsDashboard activities={activities} />
-      </TabsContent>
-    </Tabs><Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-      <AddActivityModal
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddActivity}
-        activities={activities}
-        users={users} />
-    </Dialog>
   </div >
 
 }
