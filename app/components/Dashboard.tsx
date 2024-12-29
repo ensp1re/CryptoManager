@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, Suspense, useRef } from 'react'
 import ActivityList from './ActivityList'
 import AddActivityModal from './AddActivityModal'
 import AnalyticsDashboard from './AnalyticsDashboard'
@@ -19,6 +19,7 @@ import PaginationControls from './PaginationControls'
 import { useSearchParams } from 'next/navigation'
 import { useAppSelector } from '../store/hooks'
 import { RootState } from '../store/store'
+import toast from 'react-hot-toast'
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<Activity[]>([])
@@ -26,7 +27,6 @@ export default function Dashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const dispatch = useDispatch()
   const [page, setPage] = useState(1)
   const searchParams = useSearchParams();
@@ -42,7 +42,6 @@ export default function Dashboard() {
     page: page,
     search: search
   }
-  const { data: activitiesData, isLoading: isDataLoading, isError } = useGetActivitiesQuery(data)
 
   useEffect(() => {
     if (searchParams?.get('search')) {
@@ -50,33 +49,40 @@ export default function Dashboard() {
     }
   }, [searchParams])
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      if (activitiesData && !isDataLoading && !isError) {
-        dispatch(setPageName('Dashboard'))
-        setActivities(activitiesData.activities)
-        dispatch(addActivity(activitiesData))
 
-        const usersResponse = await fetch('/api/users')
-        if (!usersResponse.ok) {
-          throw new Error(`HTTP error! status: ${usersResponse.status}`)
-        }
-        const usersData = await usersResponse.json()
-        setUsers(usersData)
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setError('Failed to fetch data. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [activitiesData, dispatch, isDataLoading, isError])
+  const { data: activitiesData, isLoading: isDataLoading, isError } = useGetActivitiesQuery(data)
+
+  const prevActivitiesDataRef = useRef<Activity[] | null>(null);
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData, page, search])
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        if (activitiesData && !isDataLoading && !isError && activitiesData.activities) {
+          if (JSON.stringify(prevActivitiesDataRef.current) !== JSON.stringify(activitiesData.activities)) {
+            dispatch(setPageName('Dashboard'));
+            setActivities(activitiesData.activities);
+
+            const usersResponse = await fetch('/api/users');
+            if (!usersResponse.ok) {
+              throw new Error(`HTTP error! status: ${usersResponse.status}`);
+            }
+            const usersData = await usersResponse.json();
+            setUsers(usersData);
+
+            prevActivitiesDataRef.current = activitiesData.activities;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to fetch data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activitiesData, isDataLoading, isError, dispatch]);
 
   const handleAddActivity = (activity: Activity) => {
     dispatch(addActivity(activity))
@@ -112,20 +118,6 @@ export default function Dashboard() {
   })
 
 
-
-  if (error) {
-    return (
-      <Alert variant="destructive" className="m-4">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          {error}
-          <Button onClick={fetchData} variant="outline" className="mt-2">
-            Try Again
-          </Button>
-        </AlertDescription>
-      </Alert>
-    )
-  }
 
   return (
     <div className="space-y-6 mb-12 lg:mb-2">
