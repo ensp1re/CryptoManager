@@ -122,13 +122,6 @@ export default function Dashboard() {
   })
 
 
-  if (isLoading && !isDataLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen transition-none">
-        <FaSpinner className="mr-2 h-8 w-8 animate-spin text-gray-800 dark:text-gray-200" />
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -144,72 +137,85 @@ export default function Dashboard() {
     )
   }
 
-  return <div className="space-y-6 mb-12 lg:mb-2">
+  return (
+    <div className="space-y-6 mb-12 lg:mb-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Select value={filter} onValueChange={(value) => setFilter(value)}>
+            <SelectTrigger className="w-[180px] dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 focus:ring-gray-500 focus:border-gray-500">
+              <SelectValue placeholder="Filter activities" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-gray-800 shadow-lg rounded-md p-2 w-[180px]">
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="all">All Activities</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="upcoming">Upcoming</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="completed">Completed</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="notCompleted">Not Completed</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="highCost">High Cost</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="lowCost">Low Cost</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="highProfit">High Profit</SelectItem>
+              <SelectItem className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200" value="lowProfit">Low Profit</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
+        </div>
+      </div>
 
 
-    <>
       <Tabs defaultValue="activities" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="activities">Activities</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         <TabsContent value="activities">
-          {filteredActivities.length === 0 && !isDataLoading && !isLoading ? (
-            <div className="flex justify-center items-center min-h-[500px]">
+          {
+            filteredActivities.length === 0 && !isLoading && (
+              <div className="flex justify-center items-center min-h-[500px]">
+                <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">
+                  <AlertTitle className="text-xl font-semibold mb-2">No activities found</AlertTitle>
+                  <AlertDescription className="text-gray-600 dark:text-gray-400">
+                    You can add a new activity by clicking the button above.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )
+          }
+          {
+            isLoading ? (
+              <div className="flex justify-center items-center min-h-[500px]">
+                <FaSpinner className="animate-spin text-4xl text-gray-500 dark:text-gray-400" />
+              </div>
+            ) : (
+              <Suspense>
+                <ActivityList
+                  activities={filteredActivities}
+                  users={users}
+                  updateActivity={handleUpdateActivity}
+                  deleteActivity={handleDeleteActivity}
+                />
+                <PaginationControls page={data.page} setPage={setPage} />
+              </Suspense>
+            )
+          }
 
-              <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">
-                <AlertTitle className="text-xl font-semibold mb-2">No activities found</AlertTitle>
-                <AlertDescription className="text-gray-600 dark:text-gray-400">
-                  You can add a new activity by clicking the button above.
-                </AlertDescription>
-              </Alert>
-            </div>
-          ) : (
 
-            <Suspense>
-              <ActivityList
-                activities={filteredActivities}
-                users={users}
-                updateActivity={handleUpdateActivity}
-                deleteActivity={handleDeleteActivity} />
-              <PaginationControls page={data.page} setPage={setPage} />
-            </Suspense>
-          )}
+
         </TabsContent>
         <TabsContent value="analytics">
           <AnalyticsDashboard activities={activities} />
         </TabsContent>
-      </Tabs><Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      </Tabs>
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <AddActivityModal
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddActivity}
           activities={activities}
-          users={users} />
+          users={users}
+        />
       </Dialog>
-    </>
 
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Select value={filter} onValueChange={(value) => setFilter(value)}>
-          <SelectTrigger className="w-[180px] dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 focus:ring-gray-500 focus:border-gray-500">
-            <SelectValue placeholder="Filter activities" />
-          </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-gray-800 shadow-lg rounded-md p-2 w-[180px]">
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="all">All Activities</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="upcoming">Upcoming</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="completed">Completed</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="notCompleted">Not Completed</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="highCost">High Cost</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="lowCost">Low Cost</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="highProfit">High Profit</SelectItem>
-            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="lowProfit">Low Profit</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
-      </div>
+
+
     </div>
-
-  </div >
-
+  )
 }
 
