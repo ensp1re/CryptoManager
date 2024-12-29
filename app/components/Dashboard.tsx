@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import ActivityList from './ActivityList'
 import AddActivityModal from './AddActivityModal'
 import AnalyticsDashboard from './AnalyticsDashboard'
@@ -11,6 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Activity, User } from '@/interfaces/main.interface'
 import { FaSpinner } from 'react-icons/fa'
+import { useDispatch } from 'react-redux'
+import { addActivity, updateActivity, deleteActivity } from '../store/slices/acitivitySlice'
+import { useGetActivitiesQuery } from '../store/api'
+import { setPage as setPageName } from '../store/slices/authSlice'
+import PaginationControls from './PaginationControls'
+import { useSearchParams } from 'next/navigation'
 
 export default function Dashboard() {
   const [activities, setActivities] = useState<Activity[]>([])
@@ -19,48 +25,79 @@ export default function Dashboard() {
   const [filter, setFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const dispatch = useDispatch()
+  const [page, setPage] = useState(1)
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState('')
 
-  const fetchData = async () => {
+
+
+
+  const data = {
+    page: page,
+    search: search
+  }
+
+  const { data: activitiesData, isLoading: isDataLoading, isError } = useGetActivitiesQuery(data)
+
+
+
+
+  useEffect(() => {
+    if (searchParams?.get('search')) {
+      setSearch(searchParams.get('search')!)
+    }
+  }, [searchParams])
+
+
+
+  const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const activitiesResponse = await fetch('/api/activities')
-      if (!activitiesResponse.ok) {
-        throw new Error(`HTTP error! status: ${activitiesResponse.status}`)
-      }
-      const activitiesData = await activitiesResponse.json()
-      setActivities(activitiesData)
+      if (activitiesData && !isDataLoading && !isError) {
 
-      const usersResponse = await fetch('/api/users')
-      if (!usersResponse.ok) {
-        throw new Error(`HTTP error! status: ${usersResponse.status}`)
+
+
+        dispatch(setPageName('Dashboard'))
+
+        setActivities(activitiesData.activities)
+        dispatch(addActivity(activitiesData))
+
+        const usersResponse = await fetch('/api/users')
+        if (!usersResponse.ok) {
+          throw new Error(`HTTP error! status: ${usersResponse.status}`)
+        }
+        const usersData = await usersResponse.json()
+        setUsers(usersData)
       }
-      const usersData = await usersResponse.json()
-      setUsers(usersData)
     } catch (error) {
       console.error('Error fetching data:', error)
       setError('Failed to fetch data. Please try again.')
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [activitiesData, dispatch, isDataLoading, isError])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
-  const addActivity = (activity: Activity) => {
-    setActivities(prevActivities => [...prevActivities, activity])
+  const handleAddActivity = (activity: Activity) => {
+    dispatch(addActivity(activity))
+    setActivities(prevActivities => [activity, ...prevActivities])
     setIsAddModalOpen(false)
   }
 
-  const updateActivity = (updatedActivity: Activity) => {
+  const handleUpdateActivity = (updatedActivity: Activity) => {
+    dispatch(updateActivity({ id: updatedActivity.id!, updates: updatedActivity }))
     setActivities(prevActivities =>
       prevActivities.map(a => a.id === updatedActivity.id ? updatedActivity : a)
     )
   }
 
-  const deleteActivity = (id: string) => {
+  const handleDeleteActivity = (id: string) => {
+    dispatch(deleteActivity(id))
     setActivities(prevActivities => prevActivities.filter(a => a.id !== id))
   }
 
@@ -76,8 +113,8 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <FaSpinner className="mr-2 h-4 w-4 animate-spin" /> Loading...
+      <div className="flex justify-center items-center h-screen transition-none">
+        <FaSpinner className="mr-2 h-8 w-8 animate-spin text-gray-800 dark:text-gray-200" />
       </div>
     )
   }
@@ -96,50 +133,61 @@ export default function Dashboard() {
     )
   }
 
-  return (
-    <div className="space-y-6 mb-12 lg:mb-2">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Select value={filter} onValueChange={(value) => setFilter(value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter activities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Activities</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
-        </div>
+  return <div className="space-y-6 mb-12 lg:mb-2">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <Select value={filter} onValueChange={(value) => setFilter(value)}>
+          <SelectTrigger className="w-[180px] dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 focus:ring-gray-500 focus:border-gray-500">
+            <SelectValue placeholder="Filter activities" />
+          </SelectTrigger>
+          <SelectContent className="bg-white dark:bg-gray-800 shadow-lg rounded-md p-2 w-[180px]">
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="all">All Activities</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="upcoming">Upcoming</SelectItem>
+            <SelectItem className='cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200' value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={() => setIsAddModalOpen(true)}>Add New Activity</Button>
       </div>
-      <Tabs defaultValue="activities" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="activities">Activities</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-        <TabsContent value="activities">
-          <ActivityList
-            activities={filteredActivities}
-            users={users}
-            updateActivity={updateActivity}
-            deleteActivity={deleteActivity}
-          />
-        </TabsContent>
-        <TabsContent value="analytics">
-          <AnalyticsDashboard activities={activities} />
-        </TabsContent>
-      </Tabs>
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <AddActivityModal
-          onClose={() => setIsAddModalOpen(false)}
-          onAdd={addActivity}
-          activities={activities}
-          users={users}
-        />
-      </Dialog>
     </div>
-  )
+    <Tabs defaultValue="activities" className="w-full">
+      <TabsList className="mb-4">
+        <TabsTrigger value="activities">Activities</TabsTrigger>
+        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      </TabsList>
+      <TabsContent value="activities">
+        {filteredActivities.length === 0 && !isLoading ? (
+          <div className="flex justify-center items-center min-h-[500px]">
+
+            <Alert variant="default" className="w-[400px] text-center shadow-lg bg-transparent border-0">
+              <AlertTitle className="text-xl font-semibold mb-2">No activities found</AlertTitle>
+              <AlertDescription className="text-gray-600 dark:text-gray-400">
+                You can add a new activity by clicking the button above.
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : (
+
+          <Suspense>
+            <ActivityList
+              activities={filteredActivities}
+              users={users}
+              updateActivity={handleUpdateActivity}
+              deleteActivity={handleDeleteActivity} />
+            <PaginationControls page={data.page} setPage={setPage} />
+          </Suspense>
+        )}
+      </TabsContent>
+      <TabsContent value="analytics">
+        <AnalyticsDashboard activities={activities} />
+      </TabsContent>
+    </Tabs><Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+      <AddActivityModal
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddActivity}
+        activities={activities}
+        users={users} />
+    </Dialog>
+  </div >
+
 }
 

@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Activity, User } from '@/interfaces/main.interface'
+import { useCreateActivityMutation } from '../store/api'
+import { FaSpinner } from 'react-icons/fa'
+import { useAppSelector } from '../store/hooks'
+import { RootState } from '../store/store'
 
 interface AddActivityModalProps {
   onClose: () => void
@@ -18,18 +22,24 @@ interface AddActivityModalProps {
 export default function AddActivityModal({ onClose, onAdd, users }: AddActivityModalProps) {
   const [activity, setActivity] = useState<Omit<Activity, 'id' | 'completed' | 'timeSpent' | 'progress' | 'comments'>>({
     project: '',
-    activity: '',
+    acitivityDescription: '',
     cost: 0,
     profit: 0,
-    deadline: new Date().toISOString().split('T')[0], // Set default to today's date
+    deadline: new Date().toISOString().split('T')[0],
     link: '',
     dependencies: [],
     tags: [],
     attachments: [],
-    assignedTo: []
+    assignedTo: [],
+    activities: []
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const user = useAppSelector((state: RootState) => state.auth.user)
+
+  const [postActivity, { isLoading }] = useCreateActivityMutation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const today = new Date().toISOString().split('T')[0]
     onAdd({
@@ -39,17 +49,39 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
       timeSpent: 0,
       progress: 0,
       comments: [],
-      deadline: activity.deadline || today // Use today's date if no date was entered
+      deadline: activity.deadline || today
     })
+
+
+    const dataWithUserId = {
+      ...activity,
+      userId: user?.id
+    }
+
+
+    console.log(dataWithUserId);
+    await postActivity(dataWithUserId).unwrap()
+      .then((res) => {
+        console.log('Activity created successfully');
+        console.log(res);
+      })
+      .catch((error) => {
+        console.error('Failed to create activity:', error);
+      });
+
+
+
     onClose()
   }
 
   const handleCheckboxChange = (field: 'dependencies' | 'tags' | 'assignedTo', value: string) => {
     setActivity(prev => ({
       ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter(item => item !== value)
-        : [...prev[field], value]
+      [field]: Array.isArray(prev[field])
+        ? prev[field]!.includes(value)
+          ? prev[field]!.filter(item => item !== value)
+          : [...prev[field]!, value]
+        : [value]
     }))
   }
 
@@ -63,6 +95,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="project" className="text-right">Project</Label>
             <Input
+              required
               id="project"
               value={activity.project}
               onChange={(e) => setActivity({ ...activity, project: e.target.value })}
@@ -72,9 +105,10 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="activity" className="text-right">Activity</Label>
             <Input
+              required
               id="activity"
-              value={activity.activity}
-              onChange={(e) => setActivity({ ...activity, activity: e.target.value })}
+              value={activity.acitivityDescription}
+              onChange={(e) => setActivity({ ...activity, acitivityDescription: e.target.value })}
               className="col-span-3"
             />
           </div>
@@ -83,8 +117,8 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
             <Input
               id="cost"
               type="number"
-              value={activity.cost}
-              onChange={(e) => setActivity({ ...activity, cost: parseFloat(e.target.value) })}
+              value={activity.cost!}
+              onChange={(e) => setActivity({ ...activity, cost: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
               className="col-span-3"
             />
           </div>
@@ -93,8 +127,8 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
             <Input
               id="profit"
               type="number"
-              value={activity.profit}
-              onChange={(e) => setActivity({ ...activity, profit: parseFloat(e.target.value) })}
+              value={activity.profit!}
+              onChange={(e) => setActivity({ ...activity, profit: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
               className="col-span-3"
             />
           </div>
@@ -127,7 +161,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
                 <div key={tag} className="flex items-center space-x-2">
                   <Checkbox
                     id={`tag-${tag}`}
-                    checked={activity.tags.includes(tag)}
+                    checked={activity.tags && activity.tags.includes(tag)}
                     onCheckedChange={() => handleCheckboxChange('tags', tag)}
                   />
                   <Label htmlFor={`tag-${tag}`}>{tag}</Label>
@@ -142,7 +176,7 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
                 <div key={user.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={`user-${user.id}`}
-                    checked={activity.assignedTo.includes(user.id)}
+                    checked={activity.assignedTo && activity.assignedTo.includes(user.id)}
                     onCheckedChange={() => handleCheckboxChange('assignedTo', user.id)}
                   />
                   <Label htmlFor={`user-${user.id}`}>{user.name}</Label>
@@ -152,7 +186,13 @@ export default function AddActivityModal({ onClose, onAdd, users }: AddActivityM
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Add Activity</Button>
+          <Button type="submit">
+            {
+              isLoading ? (
+                <FaSpinner className='animate-spin h-4 w-4 mr-2 inline-block' />
+              ) : 'Add Activity'
+            }
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

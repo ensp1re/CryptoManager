@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent } from 'react'
 import { DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Activity, User } from '@/interfaces/main.interface'
+import { useDeleteActivityMutation, useUpdateActivityMutation } from '../store/api'
 
 interface UpdateActivityModalProps {
   activity: Activity | null
@@ -20,6 +21,9 @@ interface UpdateActivityModalProps {
 export default function UpdateActivityModal({ activity, updateActivity, deleteActivity, onClose }: UpdateActivityModalProps) {
   const [updatedActivity, setUpdatedActivity] = useState<Activity | null>(null)
 
+  const [deletePost, { isLoading: isDeleting }] = useDeleteActivityMutation();
+  const [updatePost, { isLoading: isUpdating }] = useUpdateActivityMutation();
+
   useEffect(() => {
     if (activity) {
       setUpdatedActivity({ ...activity })
@@ -28,18 +32,32 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
 
   if (!updatedActivity) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     if (updatedActivity) {
-      updateActivity(updatedActivity)
-      onClose()
+
+
+
+      await updatePost(updatedActivity).then((res) => {
+        console.log(res);
+        updateActivity(updatedActivity)
+        onClose()
+      }).catch((err) => {
+        console.log(err);
+      })
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async (): Promise<void> => {
     if (updatedActivity && confirm('Are you sure you want to delete this activity?')) {
-      deleteActivity(updatedActivity.id)
-      onClose()
+      await deletePost(updatedActivity.id!).then((res) => {
+        console.log(res);
+        deleteActivity(updatedActivity.id!)
+        onClose()
+        console.log(res);
+      }).catch((err) => {
+        console.log(err);
+      })
     }
   }
 
@@ -50,8 +68,8 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
         return {
           ...prev,
           tags: checked
-            ? [...prev.tags, tag]
-            : prev.tags.filter(t => t !== tag)
+            ? [...(prev.tags || []), tag]
+            : (prev.tags || []).filter(t => t !== tag)
         }
       })
     }
@@ -71,7 +89,7 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
             <Input
               id="project"
               value={updatedActivity.project}
-              onChange={(e) => setUpdatedActivity({ ...updatedActivity, project: e.target.value })}
+              onChange={(e: ChangeEvent) => setUpdatedActivity({ ...updatedActivity, project: (e.target as HTMLInputElement).value })}
               className="col-span-3"
             />
           </div>
@@ -79,8 +97,8 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
             <Label htmlFor="activity" className="text-right">Activity</Label>
             <Input
               id="activity"
-              value={updatedActivity.activity}
-              onChange={(e) => setUpdatedActivity({ ...updatedActivity, activity: e.target.value })}
+              value={updatedActivity.project}
+              onChange={(e: ChangeEvent) => setUpdatedActivity({ ...updatedActivity, acitivityDescription: (e.target as HTMLInputElement).value })}
               className="col-span-3"
             />
           </div>
@@ -90,7 +108,7 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
               id="cost"
               type="number"
               value={updatedActivity.cost}
-              onChange={(e) => setUpdatedActivity({ ...updatedActivity, cost: parseFloat(e.target.value) })}
+              onChange={(e: ChangeEvent) => setUpdatedActivity({ ...updatedActivity, cost: parseFloat((e.target as HTMLInputElement).value) })}
               className="col-span-3"
             />
           </div>
@@ -100,7 +118,7 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
               id="profit"
               type="number"
               value={updatedActivity.profit}
-              onChange={(e) => setUpdatedActivity({ ...updatedActivity, profit: parseFloat(e.target.value) })}
+              onChange={(e: ChangeEvent) => setUpdatedActivity({ ...updatedActivity, profit: parseFloat((e.target as HTMLInputElement).value) })}
               className="col-span-3"
             />
           </div>
@@ -109,8 +127,16 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
             <Input
               id="deadline"
               type="date"
-              value={updatedActivity.deadline}
-              onChange={(e) => setUpdatedActivity({ ...updatedActivity, deadline: e.target.value })}
+              value={updatedActivity.deadline?.split('T')[0] || ''}
+              onChange={(e: ChangeEvent) => {
+                const value = (e.target as HTMLInputElement).value;
+                if (!value) {
+                  setUpdatedActivity({ ...updatedActivity, deadline: new Date().toISOString() });
+                  return;
+                }
+                const date = new Date(`${value}T12:00:00`);
+                setUpdatedActivity({ ...updatedActivity, deadline: date.toISOString() });
+              }}
               className="col-span-3"
             />
           </div>
@@ -121,7 +147,7 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
                 <div key={tag} className="flex items-center space-x-2">
                   <Checkbox
                     id={`tag-${tag}`}
-                    checked={updatedActivity.tags.includes(tag)}
+                    checked={updatedActivity.tags && updatedActivity.tags.includes(tag)}
                     onCheckedChange={(checked) => handleTagChange(tag, checked as boolean)}
                   />
                   <Label htmlFor={`tag-${tag}`}>{tag}</Label>
@@ -138,8 +164,20 @@ export default function UpdateActivityModal({ activity, updateActivity, deleteAc
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Update Activity</Button>
-          <Button type="button" variant="destructive" onClick={handleDelete}>Delete Activity</Button>
+          <Button type="submit">
+            {
+              isUpdating
+                ? 'Updating...'
+                : 'Update Activity'
+            }
+          </Button>
+          <Button type="button" variant="destructive" onClick={handleDelete}>
+            {
+              isDeleting
+                ? 'Deleting...'
+                : 'Delete Activity'
+            }
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

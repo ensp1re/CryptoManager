@@ -67,7 +67,7 @@ export default function CostTracker({ activities }: CostTrackerProps) {
     }
   }, [activities, chart])
 
-  const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0)
+  const totalCost = activities.reduce((sum, activity) => sum + activity.cost!, 0)
 
   return (
     <div className="mt-4">

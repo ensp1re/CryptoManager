@@ -9,8 +9,8 @@ interface FinancialTrackerProps {
 }
 
 export default function FinancialTracker({ activities }: FinancialTrackerProps) {
-  const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0)
-  const totalProfit = activities.reduce((sum, activity) => sum + activity.profit, 0)
+  const totalCost = activities.reduce((sum, activity) => sum + activity.cost!, 0)
+  const totalProfit = activities.reduce((sum, activity) => sum + activity.profit!, 0)
   const netProfit = totalProfit - totalCost
 
   const barChartData = activities.map(activity => ({

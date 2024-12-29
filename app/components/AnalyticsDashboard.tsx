@@ -9,9 +9,13 @@ interface AnalyticsDashboardProps {
 }
 
 export default function AnalyticsDashboard({ activities }: AnalyticsDashboardProps) {
-  const totalCost = activities.reduce((sum, activity) => sum + activity.cost, 0)
-  const averageProgress = activities.reduce((sum, activity) => sum + activity.progress, 0) / activities.length
-  const totalTimeSpent = activities.reduce((sum, activity) => sum + activity.timeSpent, 0)
+  const totalCost = activities.reduce((sum, activity) => sum + activity.cost!, 0)
+  const completedCount = activities.filter(activity => activity.completed).length
+  const averageProgress = (completedCount / activities.length) * 100
+  const totalTimeSpent = activities.reduce((sum, activity) => sum + activity.timeSpent!, 0)
+
+
+  const isLight = localStorage.getItem('theme') === 'light'
 
   const progressData = [
     { name: 'Completed', value: activities.filter(a => a.completed).length },
@@ -24,7 +28,7 @@ export default function AnalyticsDashboard({ activities }: AnalyticsDashboardPro
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white dark:from-purple-700 dark:to-pink-700">
           <CardHeader>
             <CardTitle>Total Cost</CardTitle>
           </CardHeader>
@@ -32,7 +36,7 @@ export default function AnalyticsDashboard({ activities }: AnalyticsDashboardPro
             <p className="text-2xl font-bold">${totalCost.toFixed(2)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-r from-blue-500 to-green-500 text-white dark:from-blue-700 dark:to-green-700">
           <CardHeader>
             <CardTitle>Average Progress</CardTitle>
           </CardHeader>
@@ -40,7 +44,7 @@ export default function AnalyticsDashboard({ activities }: AnalyticsDashboardPro
             <p className="text-2xl font-bold">{averageProgress.toFixed(2)}%</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-gradient-to-r from-yellow-500 to-red-500 text-white dark:from-yellow-700 dark:to-red-700">
           <CardHeader>
             <CardTitle>Total Time Spent</CardTitle>
           </CardHeader>
@@ -53,24 +57,24 @@ export default function AnalyticsDashboard({ activities }: AnalyticsDashboardPro
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Cost Distribution */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <CardHeader>
             <CardTitle>Cost Distribution</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={activities}>
-                <XAxis dataKey="project" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="cost" fill="#4bc0c0" />
+                <XAxis dataKey="project" tick={{ fill: isLight ? '#000' : '#fff' }} />
+                <YAxis tick={{ fill: isLight ? '#000' : '#fff' }} />
+                <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.2)' }} contentStyle={{ backgroundColor: isLight ? '#fff' : '#333', borderColor: isLight ? '#ddd' : '#444' }} />
+                <Bar dataKey="cost" fill={isLight ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)'} radius={[10, 10, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Project Progress */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <CardHeader>
             <CardTitle>Project Progress</CardTitle>
           </CardHeader>
@@ -89,7 +93,7 @@ export default function AnalyticsDashboard({ activities }: AnalyticsDashboardPro
         </Card>
 
         {/* Time Spent Distribution */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <CardHeader>
             <CardTitle>Time Spent Distribution</CardTitle>
           </CardHeader>

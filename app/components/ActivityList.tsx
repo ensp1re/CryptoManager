@@ -4,14 +4,15 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { Pencil, MessageSquare, Clock, Eye, CheckCircle, XCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import UpdateActivityModal from './UpdateActivityModal'
 import ChangeLogModal from './ChangeLogModal'
 import CommentModal from './CommentModal'
 import { Activity, User } from '@/interfaces/main.interface'
+import { useUpdateActivityMutation } from '../store/api'
+import { useRouter } from 'next/navigation'
 
 interface ActivityListProps {
   activities: Activity[]
@@ -25,6 +26,10 @@ export default function ActivityList({ activities, users, updateActivity, delete
   const [isChangeLogOpen, setIsChangeLogOpen] = useState(false)
   const [isCommentOpen, setIsCommentOpen] = useState(false)
   const [isUpdateOpen, setIsUpdateOpen] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const [id, setId] = useState('')
+  const [updatePost, { isLoading: isUpdating }] = useUpdateActivityMutation();
+  const router = useRouter()
 
   const getTagColor = (tag: string) => {
     switch (tag) {
@@ -39,40 +44,51 @@ export default function ActivityList({ activities, users, updateActivity, delete
     }
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const updatedActivity = activities.find(activity => activity.id === id)
+    const newData = { ...updatedActivity, completed: completed }
+    if (!updatedActivity) return
+    await updatePost(newData).then((res) => {
+      console.log(res);
+      updateActivity({ ...updatedActivity, completed: completed })
+    }).catch((err) => {
+      console.log(err);
+    })
+  }
+
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {activities.map(activity => (
-        <Card key={activity.id} className="flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-            <CardTitle className="text-lg">{activity.project}</CardTitle>
-            <CardDescription className="text-purple-100">{activity.activity}</CardDescription>
+      {activities && activities.map(activity => (
+        <Card key={activity?.id} className="flex flex-col hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white dark:from-purple-700 dark:to-pink-700">
+            <CardTitle className="text-lg">{activity?.project}</CardTitle>
+            <CardDescription className="text-purple-100">
+              {activity?.acitivityDescription?.split(' ').length > 5
+                ? activity?.acitivityDescription?.split(' ').slice(0, 5).join(' ') + '...'
+                : activity?.acitivityDescription}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex-grow pt-4 space-y-2">
+          <CardContent className="flex-grow pt-4 dark:bg-gray-800 space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-semibold">Cost:</span>
-              <span>${activity.cost}</span>
+              <span>${activity?.cost?.toString().slice(0, 3)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="font-semibold">Profit:</span>
-              <span className="text-green-600">${activity.profit}</span>
+              <span className="text-green-600">${activity?.profit?.toString().slice(0, 3)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="font-semibold">Deadline:</span>
               <span>
                 {activity.deadline
-                  ? format(new Date(activity.deadline), 'MMM dd, yyyy')
+                  ? format(new Date(activity?.deadline), 'MMM dd, yyyy')
                   : 'No deadline set'}
               </span>
             </div>
-            <div className="mt-2">
-              <span className="font-semibold">Progress:</span>
-              <div className="flex items-center mt-1">
-                <Progress value={isNaN(activity.progress) ? 0 : activity.progress} className="flex-grow mr-2" />
-                <span className="text-sm font-medium">{isNaN(activity.progress) ? '0' : activity.progress}%</span>
-              </div>
-            </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              {activity.tags.map(tag => (
+              {activity?.tags && activity?.tags.map(tag => (
                 <Badge key={tag} className={getTagColor(tag)}>
                   {tag}
                 </Badge>
@@ -84,7 +100,10 @@ export default function ActivityList({ activities, users, updateActivity, delete
               <Dialog open={isChangeLogOpen} onOpenChange={setIsChangeLogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full" onClick={() => setSelectedActivity(activity)}>
-                    <Clock className="w-4 h-4 mr-1" /> Log Time
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span className='sm:block md:block lg:hidden xl:block'>
+                      Log Time
+                    </span>
                   </Button>
                 </DialogTrigger>
                 <ChangeLogModal
@@ -96,7 +115,10 @@ export default function ActivityList({ activities, users, updateActivity, delete
               <Dialog open={isCommentOpen} onOpenChange={setIsCommentOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full" onClick={() => setSelectedActivity(activity)}>
-                    <MessageSquare className="w-4 h-4 mr-1" /> Comment
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    <span className='sm:block md:block lg:hidden xl:block'>
+                      Comment
+                    </span>
                   </Button>
                 </DialogTrigger>
                 <CommentModal
@@ -105,45 +127,19 @@ export default function ActivityList({ activities, users, updateActivity, delete
                   onClose={() => setIsCommentOpen(false)}
                 />
               </Dialog>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => setSelectedActivity(activity)}>
-                    <Eye className="w-4 h-4 mr-1" /> Preview
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{activity.project} - {activity.activity}</DialogTitle>
-                  </DialogHeader>
-                  <div className="mt-4 space-y-2">
-                    <p><strong>Cost:</strong> ${activity.cost}</p>
-                    <p><strong>Profit:</strong> ${activity.profit}</p>
-                    <p><strong>Deadline:</strong> {activity.deadline
-                      ? format(new Date(activity.deadline), 'MMM dd, yyyy')
-                      : 'No deadline set'}
-                    </p>
-                    <p><strong>Progress:</strong> {activity.progress}%</p>
-                    <p><strong>Tags:</strong> {activity.tags.join(', ')}</p>
-                    <p><strong>Completed:</strong> {activity.completed ? 'Yes' : 'No'}</p>
-                    <div>
-                      <strong>Comments:</strong>
-                      {activity.comments.length > 0 ? (
-                        <ul className="list-disc pl-5 mt-2">
-                          {activity.comments.map((comment, index) => (
-                            <li key={index}>{comment.content}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>No comments yet.</p>
-                      )}
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => (router.push(`/activity/${activity.id}`))}>
+                <Eye className="w-4 h-4 mr-1" />
+                <span className='sm:block md:block lg:hidden xl:block'>
+                  Preview
+                </span>
+              </Button>
               <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
                 <DialogTrigger asChild>
                   <Button variant="default" size="sm" className="w-full" onClick={() => setSelectedActivity(activity)}>
-                    <Pencil className="w-4 h-4 mr-1" /> Update
+                    <Pencil className="w-4 h-4 mr-1" />
+                    <span className='sm:block md:block lg:hidden xl:block'>
+                      Edit
+                    </span>
                   </Button>
                 </DialogTrigger>
                 <UpdateActivityModal
@@ -155,22 +151,32 @@ export default function ActivityList({ activities, users, updateActivity, delete
                   onClose={() => setIsUpdateOpen(false)}
                 />
               </Dialog>
-              <Button
-                variant={activity.completed ? "destructive" : "default"}
-                size="sm"
-                className="w-full sm:col-span-2"
-                onClick={() => updateActivity({ ...activity, completed: !activity.completed })}
-              >
-                {activity.completed ? (
-                  <>
-                    <XCircle className="w-4 h-4 mr-1" /> Mark Incomplete
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-1" /> Mark Complete
-                  </>
-                )}
-              </Button>
+              <form className='w-full sm:col-span-2' onSubmit={handleSubmit}>
+
+                <Button
+                  variant={activity.completed ? "destructive" : "default"}
+                  size="sm"
+                  className="w-full sm:col-span-2 "
+                  onClick={() => {
+                    setCompleted(!activity.completed)
+                    setId(activity.id!)
+                  }}
+                >
+                  {
+                    isUpdating && activity.id === id ? 'Updating...' :
+                      activity.completed ? (
+                        <>
+                          <XCircle className="w-4 h-4 mr-1" />
+                          <span className='sm:block md:block lg:hidden xl:block'>Mark as Incomplete</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          <span className='sm:block md:block lg:hidden xl:block'>Mark as Complete</span>
+                        </>
+                      )}
+                </Button>
+              </form>
             </div>
           </CardFooter>
         </Card>

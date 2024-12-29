@@ -5,11 +5,22 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Activity } from '@/interfaces/main.interface'
 
 interface CalendarProps {
-  activities: Activity[]
+  activities: {
+    id: string;
+    userId: string;
+    project: string;
+    cost: number | null;
+    deadline: Date | null;
+    completed: boolean | null;
+    link: string | null;
+    dependencies: string[];
+    timeSpent: number | null;
+    acitivityDescription: string;
+  }[];
 }
+
 
 export function Calendar({ activities }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -28,9 +39,11 @@ export function Calendar({ activities }: CalendarProps) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
   }
 
+  console.log(activities)
+
   const getActivitiesForDay = (day: number) => {
     return activities.filter(activity => {
-      const activityDate = new Date(activity.deadline)
+      const activityDate = new Date(activity.deadline!)
       return activityDate.getDate() === day &&
         activityDate.getMonth() === currentDate.getMonth() &&
         activityDate.getFullYear() === currentDate.getFullYear()

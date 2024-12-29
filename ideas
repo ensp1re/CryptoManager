@@ -1,0 +1,36 @@
+Create Account Page and in add Acitvity add section for Wallets save them
+and after that create an algoritm that suggest user pick that or more Wallets
+for making this Acitvity
+
+
+
+api/
+
+POST
+acivities/create 
+
+GET
+acivities (all)
+acivities/:id
+
+activities/search? (orderBy, filters ETc, search in title, description) 
+filter by most profitable, less profitable, createdAt, done, undone, incoming
+
+activities/:year/:month/:day
+
+
+PUT
+activities
+activities/:id/revert (complete/incomplete)
+
+
+Create notification to email about upcoming deadline
+
+Create image setter, change name, add notification 
+
+Add preview fo like separate page
+
+Add on sidebar upcoming deadline
+
+
+Get activities from userID

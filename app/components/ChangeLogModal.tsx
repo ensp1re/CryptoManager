@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Activity } from '@/interfaces/main.interface'
+import { useUpdateActivityMutation } from '../store/api'
 
 interface ChangeLogModalProps {
   activity: Activity | null
@@ -16,9 +17,11 @@ interface ChangeLogModalProps {
 export default function ChangeLogModal({ activity, updateActivity, onClose }: ChangeLogModalProps) {
   const [timeSpent, setTimeSpent] = useState('')
 
+  const [updatePost, { isLoading: isUpdating }] = useUpdateActivityMutation();
+
   if (!activity) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const parsedTimeSpent = parseFloat(timeSpent)
     if (isNaN(parsedTimeSpent)) return // Don't update if the input is not a valid number
@@ -27,15 +30,22 @@ export default function ChangeLogModal({ activity, updateActivity, onClose }: Ch
       ...activity,
       timeSpent: (activity.timeSpent || 0) + parsedTimeSpent
     }
-    updateActivity(updatedActivity)
-    setTimeSpent('')
-    onClose()  // Add this line to close the modal
+    await updatePost(updatedActivity).then((res) => {
+      console.log(res);
+      updateActivity(updatedActivity)
+      setTimeSpent('')
+      onClose();
+
+    }).catch((err) => {
+      console.log(err);
+      onClose();
+    })
   }
 
   return (
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>Log Time for {activity.activity}</DialogTitle>
+        <DialogTitle>Log Time for {activity.project}</DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit}>
         <div className="grid gap-4 py-4">
@@ -53,7 +63,9 @@ export default function ChangeLogModal({ activity, updateActivity, onClose }: Ch
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit">Log Time</Button>
+          <Button type="submit">
+            {isUpdating ? 'Updating...' : 'Update'}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>
